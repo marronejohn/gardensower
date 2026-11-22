@@ -1,0 +1,11 @@
+android/classes/
+android/dex/
+android/*.apk
+android/unsigned.apk
+android/aligned.apk
+android/out.apk
+android/res.zip
+android/*.keystore
+android/*.keystore.pass
+android/.keystore*
+*.keystore.b64

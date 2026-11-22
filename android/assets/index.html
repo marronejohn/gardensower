@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>GardenSower</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><span class="leaf"></span>GardenSower</div>
+    <div id="hdrDate" class="hdr-date"></div>
+  </header>
+  <main id="view"></main>
+  <button id="fab" aria-label="Add plant">+ Plant</button>
+  <nav id="tabs">
+    <button data-tab="today" class="on">Today</button>
+    <button data-tab="plants">Plants</button>
+    <button data-tab="log">Log</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+</div>
+<div id="modal" class="hidden"><div id="modalCard"></div></div>
+<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+<script src="crops.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
