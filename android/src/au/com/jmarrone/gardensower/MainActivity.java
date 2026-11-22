@@ -83,8 +83,6 @@ public class MainActivity extends Activity {
     s.setUseWideViewPort(true);
     s.setLoadWithOverviewMode(true);
     s.setAllowFileAccess(true);
-    s.setAllowFileAccessFromFileURLs(true);
-    s.setAllowUniversalAccessFromFileURLs(true);
 
     bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
     bar.setMax(100);
@@ -186,6 +184,8 @@ public class MainActivity extends Activity {
         return true;
       }
     });
+
+    web.addJavascriptInterface(new Bridge(), "GardenSowerBridge");
 
     web.setDownloadListener(new DownloadListener() {
       @Override
@@ -427,5 +427,50 @@ public class MainActivity extends Activity {
 
   private int dp(int v) {
     return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
+  }
+
+  /**
+   * The only network call in the app: the optional weather check, fetched in the
+   * native layer so the WebView needs no wide file-access flags. Delivers the raw
+   * body to the page base64-wrapped; the page parses it. Failures stay silent.
+   */
+  class Bridge {
+    @android.webkit.JavascriptInterface
+    public void fetchWeather(final double lat, final double lng) {
+      new Thread(new Runnable() {
+        @Override
+        public void run() {
+          String b64 = null;
+          try {
+            String url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat
+                + "&longitude=" + lng
+                + "&daily=precipitation_sum&past_days=2&forecast_days=4&timezone=auto";
+            java.net.HttpURLConnection c =
+                (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            c.setConnectTimeout(8000);
+            c.setReadTimeout(8000);
+            InputStream in = new java.io.BufferedInputStream(c.getInputStream());
+            ByteArrayOutputStream buf = new ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int n;
+            while ((n = in.read(chunk)) > 0) buf.write(chunk, 0, n);
+            in.close();
+            b64 = android.util.Base64.encodeToString(buf.toByteArray(),
+                android.util.Base64.NO_WRAP);
+          } catch (Exception ignored) {
+            b64 = null;
+          }
+          final String payload = b64;
+          final String js = "window.__wx && window.__wx("
+              + (payload == null ? "null" : "atob('" + payload + "')") + ");";
+          web.post(new Runnable() {
+            @Override
+            public void run() {
+              if (pageReady) web.evaluateJavascript(js, null);
+            }
+          });
+        }
+      }).start();
+    }
   }
 }

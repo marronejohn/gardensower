@@ -168,24 +168,31 @@ function fetchWeather() {
   if (!D.settings.weather || D.settings.lat == null) return;
   var cached = wxCache();
   if (cached) { renderWeather(cached); return; }
-  var url = "https://api.open-meteo.com/v1/forecast?latitude=" + D.settings.lat +
-    "&longitude=" + D.settings.lng +
-    "&daily=precipitation_sum&past_days=2&forecast_days=4&timezone=auto";
+  /* Native layer does the network call (v0.2); browser dev falls back to XHR. */
+  if (window.GardenSowerBridge && window.GardenSowerBridge.fetchWeather) {
+    try { window.GardenSowerBridge.fetchWeather(D.settings.lat, D.settings.lng); } catch (e) {}
+    return;
+  }
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", url, true);
-  xhr.onload = function () {
-    try {
-      var j = JSON.parse(xhr.responseText);
-      var past = (j.daily.precipitation_sum || []).slice(0, 2);
-      var fut = (j.daily.precipitation_sum || []).slice(2);
-      var sum = function (a) { return a.reduce(function (x, y) { return x + (y || 0); }, 0); };
-      var v = { past: Math.round(sum(past) * 10) / 10, fut: Math.round(sum(fut) * 10) / 10 };
-      wxSet(v);
-      renderWeather(v);
-    } catch (e) {}
-  };
+  xhr.open("GET", "https://api.open-meteo.com/v1/forecast?latitude=" + D.settings.lat +
+    "&longitude=" + D.settings.lng +
+    "&daily=precipitation_sum&past_days=2&forecast_days=4&timezone=auto", true);
+  xhr.onload = function () { window.__wx(btoa(unescape(encodeURIComponent(xhr.responseText)))); };
   xhr.onerror = function () {}; /* offline: the app just says nothing */
   xhr.send();
+}
+/* Native bridge hands the raw Open-Meteo JSON over base64-wrapped. */
+window.__wx = function (b64) {
+  if (!b64) return;
+  try {
+    var j = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    var past = (j.daily.precipitation_sum || []).slice(0, 2);
+    var fut = (j.daily.precipitation_sum || []).slice(2);
+    var sum = function (a) { return a.reduce(function (x, y) { return x + (y || 0); }, 0); };
+    var v = { past: Math.round(sum(past) * 10) / 10, fut: Math.round(sum(fut) * 10) / 10 };
+    wxSet(v);
+    renderWeather(v);
+  } catch (e) {}
 }
 function renderWeather(w) {
   var el = document.getElementById("wx");

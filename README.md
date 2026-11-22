@@ -43,7 +43,11 @@ outside the repo.
 
 - No account, no analytics, no third-party SDKs.
 - Location: one coarse fix at first run to set hemisphere/climate; never used again.
-- Network: used only if you turn on the optional weather check.
+- Network: used only if you turn on the optional weather check. That check is
+  fetched in the native layer, so the WebView itself never needs wide file
+  access, and a failure is silent: the app never waits on the weather.
+- Device backup: allowBackup is on deliberately, so the garden log rides along
+  in device backups. Turn it off in Settings if you would rather it didn't.
 
 ## License
 
